@@ -5,11 +5,11 @@ This is a collection of smart modules
 
 What can i do?
 
-1 Secure real-time interactive control of remote servers/multiple
+1 Secure real-time interactive control of remote servers or multiple
 
-2 Secure SFTP transfer of files to server/multiple
+2 Secure SFTP transfer of files to server or multiple
 
-3 Secure real-time port forwarding to control remote servers/multiple
+3 Secure real-time port forwarding to control remote servers or multiple
 
 4 Linux Automatic Security Optimization
 
