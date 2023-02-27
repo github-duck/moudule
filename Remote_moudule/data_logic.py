@@ -1,12 +1,14 @@
 import hashlib
 import json
-from config import remote_data_path,key_path
+from config import remote_data_path
 from package import *
 import os
 import rsa
-
+import base64
 
 remote_data_hash = ""
+public_rsa_key = "../keys/publickey.pem"
+private_rsa_key = "../keys/privatekey.pem"
 class Remote_date_operate:
 
     def __init__(self,public_rsa,private_rsa):
@@ -14,11 +16,47 @@ class Remote_date_operate:
         self.private_rsa = private_rsa
 
     def create_rsa_key(self):
-        (publickey, privatekey) = rsa.newkeys(4096)
-        with open(key_path + "publickey.pem","wb") as p:
-            p.write(publickey.save_pkcs1("PEM"))
-        with open(key_path + "privatekey.pem","wb") as p:
-            p.write(privatekey.save_pkcs1("PEM"))
+        try:
+            (publickey, privatekey) = rsa.newkeys(4096)
+            with open(public_rsa_key,"wb") as p:
+                p.write(publickey.save_pkcs1("PEM"))
+            with open(private_rsa_key,"wb") as p:
+                p.write(privatekey.save_pkcs1("PEM"))
+            logger.info("RSA Create successful")
+            return True
+        except Exception as err:
+            logger.error(err)
+            return False
+
+    def load_rsa_key(self,path,type):
+        try:
+            if type == 1:
+                with open(path, "rb") as p:
+                    key = rsa.PublicKey.load_pkcs1(p.read())
+                return key
+            if type == 2:
+                with open(path, "rb") as p:
+                    key = rsa.PrivateKey.load_pkcs1(p.read())
+                return key
+        except Exception as err:
+            logger.error(err)
+            return False
+
+    def rsa_encrypt(self,str):
+        try:
+            key = self.load_rsa_key(public_rsa_key,1)
+            return rsa.encrypt(str.encode("utf-8"), key)
+        except Exception as err:
+            logger.error(err)
+            return False
+
+    def rsa_decrypt(self,str):
+        try:
+            key = self.load_rsa_key(private_rsa_key,2)
+            return bytes(rsa.decrypt(str,key).decode("utf-8"),'utf-8')
+        except Exception as err:
+            logger.error(err)
+            return False
 
     def get_remote_data_file_hash(self):
         try:
@@ -79,15 +117,16 @@ class Remote_date_operate:
             logger.error(err)
             return False
 
-    def add_remote_info(self,area, alias, hostname, username, cert_type, port=22, cert_path="", cert_password=""):
+    def add_remote_info(self,area, alias, hostname, username, cert_type, port="22", cert_path="", cert_password=""):
         try:
             data = {"alias": alias,
-                    "hostname": hostname,
-                    "username": username,
-                    "port": port,
-                    "cert_type": cert_type,
-                    "cert_path": cert_path,
-                    "cert_password": cert_password}
+                    "hostname": str(self.rsa_encrypt(hostname)),
+                    "username": str(self.rsa_encrypt(username)),
+                    "port": str(self.rsa_encrypt(port)),
+                    "cert_type": str(self.rsa_encrypt(cert_type)),
+                    "cert_path": str(self.rsa_encrypt(cert_path)),
+                    "cert_password": str(self.rsa_encrypt(cert_password))
+                    }
             check_area = self.get_remote_data()
             if area in check_area.keys():
                 list_gather = []
@@ -187,14 +226,17 @@ class Remote_date_operate:
 
 
 test = Remote_date_operate('1','2')
+aa = test.rsa_encrypt('fdfdf')
+#print(aa)
+#print(test.rsa_decrypt(aa))
 #print(test.create_file())
 #print(test.add_area('default1'))
-#print(test.add_remote_info('default', "test3", "192.168.1.3", "root", "1", port="22", cert_path="./test.pem", cert_password=""))
+print(test.add_remote_info('default', "test3", "192.168.1.3", "root", "1", port="22", cert_path="./test.pem", cert_password="1"))
 #print(test.delete_file())
 #print(test.delete_file())
-print(test.create_rsa_key())
-print(test.get_remote_area_list())
-print(test.get_remote_area_alias_list('default'))
+#print(test.create_rsa_key())
+#print(test.get_remote_area_list())
+#print(test.get_remote_area_alias_list('default'))
 """
 print(test.get_remote_data_file_hash())
 print(test.get_remote_data())
